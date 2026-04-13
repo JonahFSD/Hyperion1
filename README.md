@@ -1,10 +1,10 @@
 # Hyperion
 
-I spent a few months trying to build an AI-powered equity research engine. The core idea was that if you run SEC filings through a large language model and extract structural fingerprints using Sparse Autoencoders, you can find companies that operate similarly — even across industries — better than the US government's classification system.
+I spent a few months trying to build an AI-powered equity research engine. The core idea was that if you run SEC filings through a large language model and extract structural fingerprints using Sparse Autoencoders, you can find companies that operate similarly, even across industries, better than the US government's classification system.
 
 It works. Tested across 25 years of market data and 14.9 million company pairs, it beat SIC codes in every single time window we checked. The statistical significance was nearly double the gold standard threshold used in quantitative finance. 96–99% of the signal survived after removing all known risk factors. It's finding something real.
 
-The problem wasn't the research — it was the market. Better company similarity is a vitamin, not a painkiller. Analysts already have ways of finding comps that are good enough. This is measurably better, but nobody's losing sleep over it. The thing I built is cool and works, it just solves a problem that isn't painful enough for anyone to pay to fix.
+The problem wasn't the research, sadly, it was the market. Better company similarity is a vitamin, not a painkiller. Analysts already have ways of finding comps that are good enough. This is measurably better, but nobody's losing sleep over it. The thing I built is cool and works, it just solves a problem that isn't painful enough for anyone to pay to fix.
 
 So this is a research finding, not a product. Here's all the code.
 
@@ -12,15 +12,15 @@ So this is a research finding, not a product. Here's all the code.
 
 ## The idea
 
-Every public company files a 10-K (annual report) with the SEC describing how the business actually works. The government classifies these companies using SIC codes — four-digit industry labels from the 1930s. SIC codes tell you what a company *makes*. A cloud infrastructure company and a cybersecurity startup might share the same SIC code ("Prepackaged Software") despite being completely different businesses. Meanwhile, a payments processor and a specialty insurer might be in different SIC codes despite doing structurally identical things — taking thin margins on high transaction volumes.
+Every public company files a 10-K (annual report) with the SEC describing how the business actually works. The government classifies these companies using SIC codes, which are four-digit industry labels from the 1930s. SIC codes tell you what a company *makes*. A cloud infrastructure company and a cybersecurity startup might share the same SIC code ("Prepackaged Software") despite being completely different businesses. Meanwhile, a payments processor and a specialty insurer might be in different SIC codes despite doing structurally identical things, like taking thin margins on high transaction volumes.
 
 The question was: can we do better?
 
 ### What SAE fingerprints are
 
-When a large language model reads a 10-K, it doesn't just see words — it builds an internal mathematical representation of the business. A Sparse Autoencoder (SAE) extracts the meaningful patterns from that representation, producing a 131,072-dimensional fingerprint per filing. Most values are zero. The non-zero ones correspond to specific structural features the SAE learned to recognize.
+When a large language model reads a 10-K it builds an internal mathematical representation of the business. A Sparse Autoencoder (SAE) extracts the meaningful patterns from that representation, producing a 131,072-dimensional fingerprint per filing. Most values are zero. The non-zero ones correspond to specific structural features the SAE learned to recognize.
 
-We reduce these to 4,000 dimensions with PCA (keeping ~90% of the information), then measure company similarity using cosine similarity. That's it. No fine-tuning, no labels, no human judgment in the loop.
+We reduce these to 4,000 dimensions with PCA (keeping ~90% of the information), then measure company similarity using cosine similarity.
 
 The SAE is `EleutherAI/sae-llama-3-8b-32x` applied at layer 30 of Llama 3. The features come from [Molinari et al.'s HuggingFace dataset](https://huggingface.co/datasets/marco-molinari/company_reports_with_features) — roughly 27,888 filings spanning 25 years.
 
@@ -38,7 +38,7 @@ We ran 13 statistical tests across 3 layers of validation. All p-values are boot
 
 **The signal isn't just known risk factors.** We stripped out all 5 Fama-French factors (market, size, value, profitability, investment) and checked what survived. 96–99% of the SAE signal remained. Median R² = 3%. Whatever SAE is capturing, the standard factor models barely touch it.
 
-**But it doesn't predict returns.** We ran a production-realistic pairs trading backtest (walk-forward PCA, no look-ahead bias, 100-trial random-pair placebo) and an analog return prediction test. Both null. Structural similarity is real but doesn't translate to tradeable signal. More importantly — even as a similarity tool, the market for better company comps turned out to be a vitamin, not a painkiller. Analysts have workarounds that are good enough. This is better, but not urgently better.
+**But it doesn't predict returns.** We ran a production-realistic pairs trading backtest (walk-forward PCA, no look-ahead bias, 100-trial random-pair placebo) and an analog return prediction test. Both null. Structural similarity is real but doesn't translate to tradeable signal. More importantly the market for better company comps turned out to be a vitamin, not a painkiller. Analysts have workarounds that are good enough. This is better, but not urgently better.
 
 ---
 
@@ -80,13 +80,13 @@ python experiments/2b_analog_prediction.py             # analog prediction (null
 
 ### Practical notes
 
-First run downloads data from HuggingFace — takes a few minutes, then it's cached. No GPU required (everything runs on CPU). Most scripts finish in under 5 minutes. The pairs trading backtest and rolling window analysis can take 15–30 minutes. The streaming scripts handle the 15M-row similarity dataset without blowing up your RAM, but 8 GB is a comfortable minimum.
+First run downloads data from HuggingFace, takes a few minutes, then it's cached. No GPU required (everything runs on CPU). Most scripts finish in under 5 minutes. The pairs trading backtest and rolling window analysis can take 15–30 minutes. The streaming scripts handle the 15M-row similarity dataset without blowing up your RAM, but 8 GB is a comfortable minimum.
 
 ---
 
 ## What's in here
 
-`company_similarity_sae/` is the upstream ACL paper code, unmodified. `experiments/` is our work — that's the contribution.
+`company_similarity_sae/` is the upstream ACL paper code, unmodified. `experiments/` is our work. 
 
 The experiment scripts run in order within each phase:
 
@@ -100,7 +100,6 @@ The experiment scripts run in order within each phase:
 
 **Phase 2C** (`2c_01`) — Event prediction. Do fingerprint changes predict corporate events? (Explored, inconclusive.)
 
-Results land in `experiments/artifacts/`. The `docs/` folder has spec documents and write-ups from when this was going to be a product. `investigation/` has the hypothesis-tracking framework we used during validation.
 
 ---
 
