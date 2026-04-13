@@ -1,6 +1,6 @@
 # Hyperion
 
-I spent a few months trying to build an AI-powered equity research engine. The core idea was that if you run SEC filings through a large language model and extract structural fingerprints using Sparse Autoencoders, you can find companies that operate similarly, even across industries, better than the US government's classification system.
+I spent a few days trying to build an AI-powered equity research engine. The core idea was that if you run SEC filings through a large language model and extract structural fingerprints using Sparse Autoencoders, you can find companies that operate similarly, even across industries, better than the US government's classification system.
 
 It works. Tested across 25 years of market data and 14.9 million company pairs, it beat SIC codes in every single time window we checked. The statistical significance was nearly double the gold standard threshold used in quantitative finance. 96–99% of the signal survived after removing all known risk factors. It's finding something real.
 
