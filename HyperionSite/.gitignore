@@ -3,5 +3,35 @@ dist/
 .env
 .env.*
 .vercel/
-.DS_Store
 *.local
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ralph Loop & Claude
+RalphLoop/
+.claude/
+
+# Internal docs (not for public repo)
+Hyperion-Brand-Guidelines.docx
+tech-debt-audit-2026-04-13.docx
+
+# Vite scaffold leftover
+src/assets/vite.svg
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript build cache
+*.tsbuildinfo
