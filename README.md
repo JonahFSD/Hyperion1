@@ -32,13 +32,13 @@ This builds on the ACL 2025 paper [*Interpretable Company Similarity with Sparse
 
 ## What we found
 
-We ran 13 statistical tests across 3 layers of validation. All p-values are bootstrapped. Multiple testing is corrected with BHY false discovery rate.
+We ran roughly 13 statistical tests across 3 layers of validation. All p-values are bootstrapped (BCa, ticker resamples, 10,000 iterations). Benjamini-Yekutieli FDR correction is applied to the 3 Layer-1 delta tests (`experiments/1a_07_verdict.py:30,521-538`); the Layer-2 retrieval tests (T01-T05) and the 1B residual tests are reported with raw bootstrap CIs and aren't folded into the joint family.
 
-**SAE fingerprints beat SIC codes at grouping similar companies.** We replicated the paper's Mean Correlation result (MC = 0.359), then tested SAE vs SIC groupings across 21 rolling 5-year windows covering 1996–2020. SAE won in all 21. The t-statistic was 5.57 — finance research considers t > 3.0 the gold standard.
+**SAE fingerprints beat SIC codes at grouping similar companies, with one important caveat.** We replicated the paper's Mean Correlation result (MC = 0.358981 vs paper 0.359, to 1e-3) on the same 14.9 M pairs and 25 years — `experiments/artifacts/1a_replication.json`. The SAE-SIC delta of +0.128 over the pooled corpus has BCa 95% CI [0.096, 0.186] and a bootstrap pseudo-z of 5.57 (delta over bootstrap standard deviation, ticker-resamples, no degrees of freedom — `1a_bootstrap.json`). Separately, the descriptive 5-year rolling-window count has SAE > SIC in 21 of 21 windows, with the caveat that consecutive windows overlap by 4 of 5 years (`1a_rolling.json`). The headline-level Phase-1 verdict file reads `CONDITIONAL`, with three open diagnostic flags (SAE-SIC and SAE-SBERT advantages growing over time, bootstrap z₀ = 0.634) — `1a_verdict.json`. The caveat: equal-weighted MC favours SAE partly because SAE's MST-with-threshold clustering produces many size-2 clusters; under pair-weighted MC the ranking inverts (SAE 0.151 vs SIC 0.252 vs SBERT 0.210, `1a_cluster_size_control.json`). The fair reading is that SAE is a high-precision, low-recall pair-finder — which is exactly the use case the within-industry re-ranker (below) targets.
 
-**Within an industry, SAE finds 26% more genuinely similar companies.** If you start with all companies in the same SIC code and re-rank by SAE similarity, precision improves by 26% (measured by return correlation). Globally across all industries, SIC is actually the better first filter — so the natural architecture is SIC first, SAE second.
+**Within an industry, SAE adds real precision as a re-ranker.** Start with companies in the same 2-digit SIC and re-rank by SAE cosine. At K=1, the SAE-picked nearest neighbour has mean return correlation **0.263** vs **0.208** for a random same-SIC peer — a lift of **+0.055** absolute (or +26.6% relative), CI excludes zero at K=1,3,5,10 across all 25 years (`1a_11_t04_result.json`). Globally — across all industries at once — SAE's top-10 mean correlation **0.222** actually *underperforms* SIC's **0.244** (`1a_11_t03_result.json:sae_top10_vs_sic.sae_wins: false`). So the only fair architectural claim is the narrow one: SIC for candidate generation, SAE for within-industry re-ranking.
 
-**The signal isn't just known risk factors.** We stripped out all 5 Fama-French factors (market, size, value, profitability, investment) and checked what survived. 96–99% of the SAE signal remained. Median R² = 3%. Whatever SAE is capturing, the standard factor models barely touch it.
+**The within-SIC signal isn't just known risk factors.** We stripped out all 5 Fama-French factors (market, size, value, profitability, investment) and re-ran the within-SIC re-ranking on the residuals. The K-lift survived at 95.8% (K=1) to 99.1% (K=10) — `1b_factor_adjustment_result.json`. Median FF5 R² on monthly returns is 3.0%, so factor models barely touch this signal. Two scope notes: the 96–99% figure is the survival of the within-SIC K-lift specifically, not of the headline MC = 0.359 (which 1B never re-runs on residuals); and the alignment of the 12-month return vector to calendar months is assumed (m₀ = January) rather than spot-checked against Yahoo Finance.
 
 **But it doesn't predict returns.** We ran a production-realistic pairs trading backtest (walk-forward PCA, no look-ahead bias, 100-trial random-pair placebo) and an analog return prediction test. Both null. Structural similarity is real but doesn't translate to tradeable signal. More importantly the market for better company comps turned out to be a vitamin, not a painkiller. Analysts have workarounds that are good enough. This is better, but not urgently better.
 
@@ -84,11 +84,13 @@ python experiments/2b_analog_prediction.py             # analog prediction (null
 
 First run downloads data from HuggingFace, takes a few minutes, then it's cached. No GPU required (everything runs on CPU). Most scripts finish in under 5 minutes. The pairs trading backtest and rolling window analysis can take 15–30 minutes. The streaming scripts handle the 15M-row similarity dataset without blowing up your RAM, but 8 GB is a comfortable minimum.
 
+A small reproducibility wart: `experiments/1a_11_t04_within_sic_precision.py` uses `os.path.join(...)` without importing `os` at the top of the file, and reads a SIC mapping from `phase1_artifacts/idx_to_sic2.pkl` that no other committed script materialises. To re-run that script from a clean clone you need to add `import os` and rebuild the SIC mapping the way `experiments/1b_factor_adjustment.py:124-126` does. The committed result JSON in `experiments/artifacts/1a_11_t04_result.json` is from before this regression.
+
 ---
 
 ## What's in here
 
-`company_similarity_sae/` is the upstream ACL paper code, unmodified. `experiments/` is our work. 
+`company_similarity_sae/` is the upstream ACL paper code, byte-identical to upstream HEAD — do not edit. `experiments/` is our work. `experiments/legacy/` holds our earlier monolithic Phase-1 script (`run_phase1.py`, 753 lines), now superseded by the numbered modular scripts.
 
 The experiment scripts run in order within each phase:
 
@@ -118,9 +120,9 @@ Everything is public:
 
 ## Attribution
 
-This project builds on [*Interpretable Company Similarity with Sparse Autoencoders*](https://github.com/FlexCode29/company_similarity_sae) by Marco Molinari, Victor Shao, Brice Ménard, and Léopold Music (ACL 2025). Their code is in `company_similarity_sae/`, unmodified. Our contribution is the independent validation and backtest in `experiments/`.
+This project builds on [*Interpretable Company Similarity with Sparse Autoencoders*](https://github.com/FlexCode29/company_similarity_sae) by Marco Molinari, Victor Shao, Brice Ménard, and Léopold Music (ACL 2025). Their code lives in `company_similarity_sae/` and is byte-identical to upstream HEAD (verified against `gh api repos/FlexCode29/company_similarity_sae/git/trees/HEAD`). Our contribution is the independent validation and backtest in `experiments/`.
 
-**Note on the upstream code:** `run_phase1.py` computes pairwise return correlations by truncating to common array length without date alignment (line ~240: `r1[:min_len], r2[:min_len]`). If two companies have return series starting in different years, this correlates misaligned time periods. Our experiments avoid this by using the pre-computed correlation column from the HuggingFace dataset, not this function.
+**Note on our own legacy code, not the upstream paper's:** `experiments/legacy/run_phase1.py` is an early Hyperion-authored monolithic script (it lives in our tree, not in upstream — `gh api .../contents/run_phase1.py` returns HTTP 404 against FlexCode29). It computes pairwise return correlations by truncating to common array length without date alignment (line ~240: `r1[:min_len], r2[:min_len]`). If two companies have return series starting in different years, this correlates misaligned time periods. The numbered modular scripts under `experiments/` avoid this — they use the pre-computed correlation column from the HuggingFace dataset, not this function. The legacy script is kept for reference only.
 
 ## License
 
