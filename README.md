@@ -122,8 +122,5 @@ Everything is public:
 
 This project builds on [*Interpretable Company Similarity with Sparse Autoencoders*](https://github.com/FlexCode29/company_similarity_sae) by Marco Molinari, Victor Shao, Brice Ménard, and Léopold Music (ACL 2025). Their code lives in `company_similarity_sae/` and is byte-identical to upstream HEAD (verified against `gh api repos/FlexCode29/company_similarity_sae/git/trees/HEAD`). Our contribution is the independent validation and backtest in `experiments/`.
 
-**Note on our own legacy code, not the upstream paper's:** `experiments/legacy/run_phase1.py` is an early Hyperion-authored monolithic script (it lives in our tree, not in upstream — `gh api .../contents/run_phase1.py` returns HTTP 404 against FlexCode29). It computes pairwise return correlations by truncating to common array length without date alignment (line ~240: `r1[:min_len], r2[:min_len]`). If two companies have return series starting in different years, this correlates misaligned time periods. The numbered modular scripts under `experiments/` avoid this — they use the pre-computed correlation column from the HuggingFace dataset, not this function. The legacy script is kept for reference only.
-
-## License
 
 MIT
